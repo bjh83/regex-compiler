@@ -1,33 +1,33 @@
 #include<stdio.h>
 #include"regex.h"
 
-int main()
+int main(int argv, char *argc[])
 {
 	printf("Compilation begining...\n");
-	InstructArray_t *container = compile("aaa");
+	InstructArray_t *container = compile(argc[1]);
 	Instruct_t *array = container->array;
-	FILE *file = fopen("test.txt", "w");
-	int length = sizeof(array) / sizeof(Instruct_t);
+	int length = container->length;
 	int index = 0;
-	fprintf(file, "Size of file:%d\nOPCODES:\n", length);
 	while(index < length)
 	{
 		Instruct_t instruct = array[index];
 		switch(instruct.opcode)
 		{
 			case START:
-				fprintf(file, "START\n");
+				printf("%d START\n", index);
 				break;
 			case CHAR:
-				fprintf(file, "CHAR\t%c\n", instruct.character);
+				printf("%d CHAR\t%c\n", index, instruct.character);
 				break;
 			case SPLIT:
-				fprintf(file, "SPLIT\t%d\t%d\n", instruct.left, instruct.right);
+				printf("%d SPLIT\t%d\t%d\n", index, instruct.left, instruct.right);
 				break;
 			case JMP:
-				fprintf(file, "JMP\t%d\n", instruct.left);
+				printf("%d JMP\t%d\n", index, instruct.left);
+				break;
 			case MATCH:
-				fprintf(file, "MATCH\n");
+				printf("%d MATCH\n", index);
+				break;
 		}
 		index++;
 	}

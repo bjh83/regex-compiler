@@ -48,6 +48,7 @@ typedef struct
 typedef struct
 {
 	Instruct_t *array;
+	int length;
 } InstructArray_t;
 
 struct list

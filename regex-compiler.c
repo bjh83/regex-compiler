@@ -4,7 +4,6 @@
 
 int lex(char old_string[], int new_string[])
 {
-	printf("Lexing beginning...\n");
 	int index = 0;
 	int new_index = 0;
 	int length = sizeof(old_string) / sizeof(char);
@@ -42,6 +41,7 @@ int lex(char old_string[], int new_string[])
 				}
 				else
 					new_string[new_index] = PLUS;
+				break;
 			case '?':
 				if(escaped)
 				{
@@ -78,6 +78,8 @@ int lex(char old_string[], int new_string[])
 				else
 					new_string[new_index] = RIGHT_PAREN;
 				break;
+			case '\0':
+				goto DONE;
 			default:
 				new_string[new_index] = old_string[index];
 				break;
@@ -87,8 +89,8 @@ int lex(char old_string[], int new_string[])
 		index++;
 		new_index++;
 	}
+DONE:
 	new_string[new_index] = EMPTY;
-	printf("Lexing complete...\nLength of regex:\t%d\n", new_index + 1);
 	return 1;
 }
 
@@ -222,6 +224,7 @@ int parse(int **string, Node_t *node) //returns 1 on success
 				Node_t *left = malloc(sizeof(Node_t));
 				left->type = START;
 				node->left = left;
+				node->right = NULL;
 				if(!parse(string, left))
 				{
 					return 0;
@@ -235,6 +238,8 @@ int parse(int **string, Node_t *node) //returns 1 on success
 				return 1;
 			} else if(**string < REG_BOUND) {
 				node->character = **string;
+				node->left = NULL;
+				node->right = NULL;
 				(*string)++; //Consumes a regular character
 				return 1;
 			} else {
@@ -295,7 +300,7 @@ InstructList_t *generate(Node_t *node, InstructList_t *list)
 					InstructList_t *save = list;
 					list = generate(node->left, list);
 					list->next = malloc(sizeof(InstructList_t));
-					list->next->index = list->index;
+					list->next->index = list->index + 1;
 					list = list->next;
 					list->instruct.opcode = SPLIT;
 					list->instruct.left = save->index + 1;
@@ -319,12 +324,17 @@ InstructList_t *generate(Node_t *node, InstructList_t *list)
 		}
 		case LEAF:
 		{
-			list->next = malloc(sizeof(InstructList_t));
-			list->next->index = list->index + 1;
-			list = list->next;
-			list->instruct.opcode = CHAR;
-			list->instruct.character = (char) node->character;
-			return list;
+			if(node->left == NULL)
+			{
+				list->next = malloc(sizeof(InstructList_t));
+				list->next->index = list->index + 1;
+				list = list->next;
+				list->instruct.opcode = CHAR;
+				list->instruct.character = (char) node->character;
+				return list;
+			} else {
+				return generate(node->left, list);
+			}
 		}
 		case EPSILON:
 			return list;
@@ -373,8 +383,7 @@ InstructArray_t *compile(char regex[])
 	instruct_list_tail = instruct_list_tail->next;
 	instruct_list_tail->instruct.opcode = MATCH;
 	length = instruct_list_tail->index + 1;
-	printf("Length of list:\t%d\n", length);
-	Instruct_t *array = (Instruct_t *) malloc(sizeof(Instruct_t) * length);
+	Instruct_t *array = malloc(sizeof(Instruct_t) * length);
 	int index = 0;
 	while(index < length)
 	{
@@ -386,6 +395,7 @@ InstructArray_t *compile(char regex[])
 	}
 	InstructArray_t *ret_val = malloc(sizeof(InstructArray_t));
 	ret_val->array = array;
+	ret_val->length = length;
 	return ret_val;
 }
 
